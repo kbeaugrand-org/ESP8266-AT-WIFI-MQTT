@@ -94,6 +94,7 @@ AT+GMR
 ```txt
 <AT version info>
 <Bin version>
+
 OK
 ```
 
@@ -108,21 +109,23 @@ OK
 AT+GMR
 AT version:1.0.0
 Bin version:0.0.1
+
 OK
 ```
 
 ### AT+CMD: List all AT commands and types supported in current firmware
 
-**Command:**
+**Query Command:**
 
 ```txt
-AT+CMD
+AT+CMD?
 ```
 
 **Response:**
 
 ```txt
 +CMD:<index>,<AT command name>,<support test command>,<support query command>,<support set command>,<support execute command>
+
 OK
 ```
 
@@ -149,9 +152,345 @@ AT+CWMODE?
 
 ```txt
 +CWMODE:<mode>
+
 OK
 ```
 
 **Parameters:**
 
 * ``<time>``: the duration of the device’s deep sleep. Unit: ms.ESP device will automatically wake up after the deep-sleep for as many milliseconds (ms) as ``<time>`` indicates.Upon waking up, the device calls deep sleep wake stub, and then proceeds to load application.
+
+### AT+CWSTATE: Query the Wi-Fi state and Wi-Fi information
+
+**Command:**
+
+```txt
+AT+CWSTATE?
+```
+
+**Response:**
+
+```txt
++CWSTATE:<state>,<ssid>
+
+OK
+```
+
+**Parameters:**
+
+* ``<state>``: current Wi-Fi state.
+        0: The station has not started any Wi-Fi connection.
+        1: The station has connected to an AP, but does not get an IPv4 address yet.
+        2: The station has connected to an AP, and got an IPv4 address.
+        3: The station is in Wi-Fi connecting or reconnecting state.
+        4: The station is in Wi-Fi disconnected state.
+* ``<ssid>``: the SSID of the target AP.
+
+### AT+CWJAP: Connect to an AP
+
+**Query Command:**
+
+Query the AP to which the Station is already connected.
+
+```txt
+AT+CWJAP?
+```
+
+**Response:**
+
+```txt
++CWJAP:<ssid>,<bssid>,<channel>,<rssi>
+
+OK
+```
+
+**Set Command:**
+
+Query the AP to which the Station is already connected.
+
+```txt
+AT+CWJAP=[<ssid>],[<pwd>]
+```
+
+**Response:**
+
+```txt
+DISCONNECTED
+CONNECTED
+
+OK
+```
+
+or
+
+```txt
+DISCONNECTED
+
+ERROR
+```
+
+**Parameters:**
+
+* ``<ssid>``: the SSID of the target AP.
+    Escape character syntax is needed if SSID or password contains special characters, such ``,``, ``"``, or ``\\``.
+* ``<pwd>``: password, MAX: 63-byte ASCII.
+* ``<bssid>``: the MAC address of the target AP. It cannot be omitted when multiple APs have the same SSID.
+* ``<channel>``: channel.
+* ``<rssi>``: signal strength.
+
+### AT+CWRECONNCFG: Query/Set the Wi-Fi Reconnecting Configuration
+
+**Query Command:**
+
+```txt
+AT+CWRECONNCFG?
+```
+
+**Response:**
+
+```txt
++CWRECONNCFG:<reconncfg>
+
+OK
+```
+
+**Set Command:**
+
+Query the AP to which the Station is already connected.
+
+```txt
+AT+CWRECONNCFG:<reconncfg>
+```
+
+**Response:**
+
+```txt
+OK
+```
+
+**Parameters:**
+
+* ``<reconncfg>``: the reconnecting configuration.
+    0: auto-reconnect is disabled.
+    1: auto-reconnect is enabled.
+
+### AT+CWLAP: List Available APs
+
+**Execute Command:**
+
+```txt
+AT+CWLAP
+```
+
+**Response:**
+
+```txt
++CWLAP:<ecn>,<ssid>,<rssi>,<mac>,<channel>
+
+OK
+```
+
+**Parameters:**
+
+* ``<ecn>``: encryption method.
+    0: OPEN
+    1: WEP
+    2: WPA PSK
+    3: WPA2 PSK
+    4: WPA WPA2 PSK
+* ``<ssid>``: string parameter showing SSID of the AP.
+* ``<rssi>``: signal strength.
+* ``<mac>``: string parameter showing MAC address of the AP.
+* ``<channel>``: channel.
+
+### AT+CWQAP: Disconnect from an AP
+
+**Execute Command:**
+
+```txt
+AT+CWQAP
+```
+
+**Response:**
+
+```txt
+OK
+```
+
+### AT+CWSAP: Query/Set the configuration of an ESP32 SoftAP
+
+**Query Command:**
+
+```txt
+AT+CWSAP?
+```
+
+**Response:**
+
+```txt
++CWSAP:<ssid>,<pwd>,<channel>
+
+OK
+```
+
+**Set Command:**
+
+```txt
+AT+CWSAP=<ssid>,<pwd>,<chl>,<ecn>,<max conn>,<ssid hidden>
+```
+
+**Response:**
+
+```txt
+OK
+```
+
+**Parameters:**
+
+* ``<ssid>``: string parameter showing SSID of the AP.
+* ``<pwd>``: string parameter showing the password. Length: 8 ~ 63 bytes ASCII.
+* ``<channel>``: channel ID.
+* ``<ecn>``: encryption method; WEP is not supported.
+  * 0: OPEN
+  * 2: WPA_PSK
+  * 3: WPA2_PSK
+  * 4: WPA_WPA2_PSK
+* [``<max conn>``]: maximum number of stations that SoftAP can connect. Range: [1,10].
+* [``<ssid hidden>``]:
+  * 0: broadcasting SSID (default).
+  * 1: not broadcasting SSID.
+
+### AT+CWLIF: Obtain IP Address of the Station That Connects to an SoftAP
+
+**Execute Command:**
+
+```txt
+AT+CWLIF
+```
+
+**Response:**
+
+```txt
++CWLIF:<ip addr>,<mac>
+
+OK
+```
+
+**Parameters:**
+
+* ``<ip addr>``: IP address of the station that connects to the SoftAP.
+* ``<mac>``: MAC address of the station that connects to the SoftAP.
+
+### AT+CWQIF: Disconnect Stations from an SoftAP
+
+**Execute Command:**
+
+```txt
+AT+CWQIF
+```
+
+**Response:**
+
+```txt
+OK
+```
+
+### AT+CWDHCP: Enable/Disable DHCP
+
+**Query Command:**
+
+```txt
+AT+CWDHCP?
+```
+
+**Response:**
+
+```txt
++CWDHCP:<state>
+
+OK
+```
+
+**Set Command:**
+
+```txt
+AT+CWDHCP=<operate>,<mode>
+```
+
+**Response:**
+
+```txt
+OK
+```
+
+**Parameters:**
+
+* ``<operate>``:
+    0: disable
+    1: enable
+* ``<mode>``:
+    0: Station DHCP
+    1: SoftAP DHCP
+* ``<state>``: the status of DHCP
+    Bit0:
+        0: Station DHCP is disabled.
+        1: Station DHCP is enabled.
+    Bit1:
+        0: SoftAP DHCP is disabled.
+        1: SoftAP DHCP is enabled.
+
+### AT+CIPSTA: Query/Set the IP Address of an ESP32 Station
+
+**Query Command:**
+
+```txt
+AT+CIPSTA?
+```
+
+**Response:**
+
+```txt
++CIPSTA:ip:<ip>
++CIPSTA:gateway:<gateway>
++CIPSTA:netmask:<netmask>
+
+OK
+```
+
+**Parameters:**
+
+* ``<ip>``: string parameter showing the IPv4 address of the station.
+* ``<gateway>``: gateway.
+* ``<netmask>``: netmask.
+
+### AT+CWHOSTNAME: Query/Set the Host Name of an ESP32 Station
+
+**Query Command:**
+
+```txt
+AT+CWHOSTNAME?
+```
+
+**Response:**
+
+```txt
++CWHOSTNAME:<hostname>
+
+OK
+```
+
+**Set Command:**
+
+```txt
+AT+CWHOSTNAME=<hostname>
+```
+
+**Response:**
+
+```txt
+OK
+```
+
+**Parameters:**
+
+* ``<hostname>``: the host name of the Station. Maximum length: 32 bytes.

@@ -34,7 +34,7 @@ typedef struct _at_command
 #endif
 
 #ifndef AT_COMMANDS_NUM
-#define AT_COMMANDS_NUM 10
+#define AT_COMMANDS_NUM 50
 #endif
 
 #ifdef __cplusplus

@@ -1,3 +1,7 @@
+#ifndef DEBUG_WIFI
+#define DEBUG_WIFI(...) Serial.println(__VA_ARGS__)
+#endif
+
 #include <Arduino.h>
 #include "common.h"
 

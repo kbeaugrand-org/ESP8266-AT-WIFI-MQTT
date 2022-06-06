@@ -1,7 +1,32 @@
 {
     "cSpell.words": [
+        "APPSK",
+        "APSSID",
         "bssid",
+        "CIPSTA",
+        "CWDHCP",
+        "CWHOSTNAME",
+        "CWJAP",
+        "CWLAP",
+        "CWLIF",
         "CWMODE",
-        "GSLP"
-    ]
+        "CWQAP",
+        "CWQIF",
+        "CWRECONNCFG",
+        "CWSAP",
+        "CWSTATE",
+        "dhcpc",
+        "dhcps",
+        "freqcal",
+        "GSLP",
+        "millis",
+        "reconncfg",
+        "rssi",
+        "softap",
+        "SSID"
+    ],
+    "files.associations": {
+        "string": "cpp",
+        "ranges": "cpp"
+    }
 }

@@ -1,15 +1,16 @@
 #include "wifi_commands.h"
+
 #include "ESP8266WiFi.h"
+#include "ESP8266WiFiType.h"
+
 #include "at_parser.h"
 
-// WIFI MODE
-#define WIFI_MODE_DISABLED 0
-#define WIFI_MODE_STA 1
-#define WIFI_MODE_AP 2
-#define WIFI_MODE_AP_STA 3
-
-int wifi_mode = WIFI_MODE_DISABLED;
-
+/**
+ * Formats the WiFi Status.
+ *
+ * @param The WiFi status.
+ * @return A string representing the WiFi status.
+ */
 const char *format_wl_status(wl_status_t status)
 {
   switch (status)
@@ -30,95 +31,179 @@ const char *format_wl_status(wl_status_t status)
     return "WRONG PASSWORD";
   case WL_DISCONNECTED:
     return "DISCONNECTED";
+  default:
+    return "UNKNOWN";
   }
-
-  return "UNKNOWN";
 }
 
+/**
+ * Formats the WiFi encryption type.
+ *
+ * @param The WiFi encryption type.
+ */
+const uint8_t format_enc_type(uint8_t encType)
+{
+  switch (encType)
+  {
+  case ENC_TYPE_NONE:
+    return 0;
+  case ENC_TYPE_WEP:
+    return 1;
+  case ENC_TYPE_TKIP:
+    return 2;
+  case ENC_TYPE_CCMP:
+    return 3;
+  case ENC_TYPE_AUTO:
+    return 4;
+  default:
+    return -1;
+  }
+}
+
+/**
+ * Gets the Wifi mode.
+ *
+ * @param AT+CWMODE?
+ * @return +CWMODE:<mode>
+ */
 char get_wifi_mode(char *value)
 {
-  sprintf(value, "+CWMODE:%d", wifi_mode);
+  sprintf(value, "+CWMODE:%d", WiFi.getMode());
 
   return AT_OK;
 }
 
+/**
+ * Sets the Wifi mode.
+ *
+ * @param AT+CWMODE=<mode>
+ */
 char set_wifi_mode(char *value)
 {
-  sscanf(value, "%d", &wifi_mode);
+  int mode;
 
-  return AT_OK;
+  sscanf(value, "%d", &mode);
+
+  if (WiFi.mode((WiFiMode_t)mode))
+  {
+    return AT_OK;
+  }
+
+  return AT_ERROR;
 }
 
+/**
+ * Gets the Wifi status.
+ *
+ * @param AT+CWSTATE?
+ * @return +CWSTATE:<state>,<ssid>
+ */
 char get_wifi_status(char *value)
 {
-  if (wifi_mode != WIFI_MODE_STA)
+  if (WiFi.getMode() != WIFI_STA)
   {
     return AT_ERROR;
   }
 
-  station_status_t status = wifi_station_get_connect_status();
-  sprintf(value, "+CWSTATE:%d", status);
-
-  return AT_OK;
-}
-
-char print_wl_status(wl_status_t status)
-{
-  Serial.println(format_wl_status(status));
-  uint8_t startTime = millis();
-
-  if (status != WL_CONNECTED || status != WL_CONNECT_FAILED)
+  switch (WiFi.status())
   {
-    while (millis() - startTime < 5000)
-    {
-      wl_status_t new_status = WiFi.status();
-
-      if (new_status != status)
-      {
-        status = new_status;
-        Serial.println(format_wl_status(status));
-      }
-
-      if (status == WL_CONNECTED || status == WL_CONNECT_FAILED)
-      {
-        return AT_ERROR;
-      }
-
-      delay(100);
-    }
-
+  case WL_IDLE_STATUS:
+    sprintf(value, "+CWSTATE:0,");
     return AT_OK;
+  case WL_CONNECTED:
+    if (!WiFi.localIP().isSet())
+    {
+      sprintf(value, "+CWSTATE:1,%s", WiFi.SSID().c_str());
+    }
+    else
+    {
+      sprintf(value, "+CWSTATE:2,%s", WiFi.SSID().c_str());
+    }
+    return AT_OK;
+  case WL_CONNECTION_LOST:
+    sprintf(value, "+CWSTATE:3,%s", WiFi.SSID().c_str());
+    return AT_OK;
+  case WL_DISCONNECTED:
+    sprintf(value, "+CWSTATE:4,");
+    return AT_OK;
+  default:
+    return AT_ERROR;
   }
 }
 
+/**
+ * Prints the current WiFi status.
+ * It is used by the AT+CWJAP command.
+ *
+ * During a maximum of 30 seconds, the module will print the current WiFi status.
+ * If the module is not connected to a WiFi network, it will print the error code
+ * If the module is connected to a WiFi network, it will print CONNECTED and exit.
+ *
+ * @param The first status.
+ */
+char print_wl_status(wl_status_t status)
+{
+  Serial.println(format_wl_status(status));
+  long startTime = millis();
+
+  while ((millis() - startTime) < 30000)
+  {
+    wl_status_t new_status = WiFi.status();
+
+    if (new_status != status)
+    {
+      status = new_status;
+      Serial.println(format_wl_status(status));
+    }
+
+    if (status == WL_CONNECTED)
+    {
+      return AT_OK;
+    }
+
+    delay(100);
+  }
+
+  return AT_ERROR;
+}
+
+/**
+ * Query the Wifi station settings.
+ *
+ * @param AT+CWJAP?
+ * @return +CWJAP:<ssid>,<bssid>,<channel>,<rssi>
+ */
 char get_station_settings(char *value)
 {
-  sprintf(value, "+CWJAP:%s,%s,%d,%d", WiFi.SSID().c_str(), WiFi.BSSID(), WiFi.channel(), WiFi.RSSI());
+  sprintf(value, "+CWJAP:%s,%s,%d,%d", WiFi.SSID().c_str(), WiFi.BSSIDstr().c_str(), WiFi.channel(), WiFi.RSSI());
 
   return AT_OK;
 }
 
+/**
+ * Sets the Wifi station settings.
+ *
+ * @param AT+CWJAP=[<ssid>],[<pwd>]
+ */
 char set_station_settings(char *value)
 {
   char ssid[50];
   char pwd[128];
-  uint8_t bssid[50];
 
-  if (wifi_mode != WIFI_MODE_STA)
-  {
-    wifi_mode = WIFI_MODE_STA;
-  }
+  WiFi.mode(WIFI_STA);
 
-  sscanf(value, "\"%[^\"]\",\"%[^\"]\",%s",
-         ssid,
-         pwd,
-         bssid);
+  sscanf(value, "\"%[^\"]\",\"%[^\"]\"", ssid, pwd);
 
   wl_status_t status = WiFi.begin(ssid, pwd);
 
   return print_wl_status(status);
 }
 
+/**
+ * Connects the Wifi station settings with the last SSID and password.
+ *
+ * @param AT+CWJAP
+ */
 char connect_station(char *value)
 {
   wl_status_t status = WiFi.begin();
@@ -126,9 +211,312 @@ char connect_station(char *value)
   return print_wl_status(status);
 }
 
+/**
+ * Sets the Wifi auto-reconnect.
+ *
+ * @param AT+CWRECONNCFG=[<reconncfg>]
+ */
+char set_reconnect(char *value)
+{
+  int reconncfg;
+  sscanf(value, "%d", &reconncfg);
+
+  WiFi.setAutoReconnect(reconncfg);
+
+  return AT_OK;
+}
+
+/**
+ * Sets the Wifi auto-reconnect.
+ *
+ * @param AT+CWRECONNCFG?
+ */
+char get_reconnect(char *value)
+{
+  int reconncfg;
+  sscanf(value, "%d", &reconncfg);
+
+  sprintf(value, "+CWRECONNCFG:%d", WiFi.getAutoReconnect());
+
+  return AT_OK;
+}
+
+/**
+ * Prints the scan results.
+ *
+ * @param The network scan number.
+ */
+void print_scanned_networks(int numNetworks)
+{
+  for (int i = 0; i < numNetworks; i++)
+  {
+    Serial.print("+CWLAP:");
+    Serial.print(format_enc_type(WiFi.encryptionType(i)));
+    Serial.print(",");
+    Serial.print(WiFi.SSID(i));
+    Serial.print(",");
+    Serial.print(WiFi.RSSI(i));
+    Serial.print(",");
+    Serial.print(WiFi.BSSIDstr(i).c_str());
+    Serial.print(",");
+    Serial.println(WiFi.channel(i));
+  }
+}
+
+/**
+ * Lists the Wifi access points.
+ *
+ * @param AT+CWLAP
+ * @return +CWLAP:<ecn>,<ssid>,<rssi>,<mac>,<channel>
+ */
+char execute_get_list_ap(char *value)
+{
+  int numNetworks = WiFi.scanNetworks();
+
+  print_scanned_networks(numNetworks);
+  return AT_OK;
+}
+
+/**
+ * Disconnect from an AP
+ *
+ * @param AT+CWQAP
+ * @return OK
+ */
+char execute_disconnect_ap(char *value)
+{
+  if (WiFi.disconnect())
+  {
+    return AT_OK;
+  }
+  else
+  {
+    return AT_ERROR;
+  }
+}
+
+/**
+ * Query the Wifi Access Point.
+ *
+ * @param AT+CWSAP?
+ * @return +CWSAP:<ssid>,<pwd>,<channel>
+ */
+char get_access_point_settings(char *value)
+{
+  sprintf(value, "+CWSAP:%s,%s,%d",
+          WiFi.softAPSSID().c_str(),
+          WiFi.softAPPSK().c_str(),
+          WiFi.channel());
+
+  return AT_OK;
+}
+
+/**
+ * Sets the Wifi Access Point settings.
+ *
+ * @param AT+CWSAP=<ssid>,<pwd>,<chl>,<ecn>,<ssid hidden>
+ */
+char set_access_point_settings(char *value)
+{
+  char ssid[50];
+  char pwd[128];
+  int channel;
+  int ecn;
+  int hidden;
+
+  bool result = false;
+
+  sscanf(value, "\"%[^\"]\",\"%[^\"]\",%d,%d,%d", ssid, pwd, &channel, &ecn, &hidden);
+
+  if (ecn == 0)
+  {
+    result = WiFi.softAP(ssid, NULL, channel, hidden);
+  }
+  else if (ecn == 1)
+  {
+    WiFi.enableInsecureWEP(true);
+    result = WiFi.softAP(ssid, pwd, channel, hidden);
+  }
+  else
+  {
+    WiFi.enableInsecureWEP(false);
+    result = WiFi.softAP(ssid, pwd, channel, hidden);
+  }
+
+  return result ? AT_OK : AT_ERROR;
+}
+
+/**
+ * Obtain IP Address of the Station That Connects to an SoftAP
+ *
+ * @param AT+CWLIF
+ * @return +CWLIF:<ip addr>,<mac>
+ */
+char execute_get_connected_station(char *value)
+{
+  int stationNum = WiFi.softAPgetStationNum();
+  char mac[18] = {0};
+
+  if (stationNum <= 0)
+  {
+    return AT_OK;
+  }
+
+  station_info *station = wifi_softap_get_station_info();
+
+  do
+  {
+    sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X", station->bssid[0], station->bssid[1], station->bssid[2], station->bssid[3], station->bssid[4], station->bssid[5]);
+
+    Serial.print("+CWLIF:");
+    Serial.print(IPAddress(station->ip).toString().c_str());
+    Serial.print(",");
+    Serial.print(String(mac).c_str());
+    Serial.println();
+
+    station = STAILQ_NEXT(station, next);
+  } while (station != NULL);
+
+  return AT_OK;
+}
+
+/**
+ * Disconnect Stations from an SoftAP
+ *
+ * @param AT+CWQIF
+ */
+char execute_disconnect_station(char *value)
+{
+  if (WiFi.disconnect(false))
+  {
+    return AT_OK;
+  }
+
+  return AT_ERROR;
+}
+
+/**
+ * Get DHCP setting.
+ *
+ * @param AT+CWDHCP?
+ * @returns +CWDHCP:<state>
+ */
+char get_dhcp_setting(char *value)
+{
+  int state = 0;
+
+  dhcp_status status = wifi_station_dhcpc_status();
+
+  if (status == DHCP_STARTED)
+    state += 1;
+
+  status = wifi_softap_dhcps_status();
+
+  if (status == DHCP_STARTED)
+    state += 2;
+
+  sprintf(value, "+CWDHCP:%d", state);
+
+  return AT_OK;
+}
+
+/**
+ * Enable/Disable DHCP
+ *
+ * @param AT+CWDHCP=<operate>,<mode>
+ */
+char set_dhcp_setting(char *value)
+{
+  int operate;
+  int mode;
+
+  sscanf(value, "%d,%d", &operate, &mode);
+
+  switch (mode)
+  {
+  case 0 /* STA mode */:
+    if (operate == 1)
+      wifi_station_dhcpc_start();
+    else
+      wifi_station_dhcpc_stop();
+    return AT_OK;
+  case 1 /* AP mode */:
+    if (operate == 1)
+      wifi_softap_dhcps_start();
+    else
+      wifi_softap_dhcps_stop();
+    return AT_OK;
+
+  default:
+    return AT_ERROR;
+  }
+
+  return AT_ERROR;
+}
+
+/**
+ * Get Station IP information.
+ *
+ * @param AT+CIPSTA?
+ * @returns 
+ * +CIPSTA:ip:<"ip">
+ * +CIPSTA:gateway:<"gateway">
+ * +CIPSTA:netmask:<"netmask">
+ */
+char get_sta_ip_info(char *value)
+{
+  sprintf(value, "+CIPSTA:%s,%s,%s",
+          WiFi.localIP().toString().c_str(),
+          WiFi.gatewayIP().toString().c_str(),
+          WiFi.subnetMask().toString().c_str());
+
+  return AT_OK;
+}
+
+/**
+ * Gets the Station hostname.
+ *
+ * @param AT+CWHOSTNAME?
+ */
+char set_sta_hostname(char *value)
+{
+  if(WiFi.setHostname(value))
+  {
+    return AT_OK;
+  }
+  else
+  {
+    return AT_ERROR;
+  }
+}
+
+/**
+ * Sets the Station hostname.
+ *
+ * @param AT+CWHOSTNAME=<hostname>
+ */
+char get_sta_hostname(char *value)
+{
+  sprintf(value, "+CWHOSTNAME:%s", WiFi.getHostname());
+  return AT_OK;
+}
+
+/**
+ * Registers the Wifi station AT commands.
+ *
+ */
 void register_wifi_commands()
 {
   at_register_command((string_t) "CWMODE", (at_callback)get_wifi_mode, (at_callback)set_wifi_mode, 0, 0);
   at_register_command((string_t) "CWSTATE", (at_callback)get_wifi_status, 0, 0, 0);
   at_register_command((string_t) "CWJAP", (at_callback)get_station_settings, (at_callback)set_station_settings, 0, (at_callback)connect_station);
+  at_register_command((string_t) "CWRECONNCFG", (at_callback)get_reconnect, (at_callback)set_reconnect, 0, 0);
+  at_register_command((string_t) "CWLAP", 0, 0, 0, (at_callback)execute_get_list_ap);
+  at_register_command((string_t) "CWQAP", 0, 0, 0, (at_callback)execute_disconnect_ap);
+  at_register_command((string_t) "CWSAP", (at_callback)get_access_point_settings, (at_callback)set_access_point_settings, 0, 0);
+  at_register_command((string_t) "CWLIF", 0, 0, 0, (at_callback)execute_get_connected_station);
+  at_register_command((string_t) "CWQIF", 0, 0, 0, (at_callback)execute_disconnect_station);
+  at_register_command((string_t) "CWDHCP", (at_callback)get_dhcp_setting, (at_callback)set_dhcp_setting, 0, 0);
+  at_register_command((string_t) "CIPSTA", (at_callback)get_sta_ip_info, 0, 0, 0);
+  at_register_command((string_t) "CWHOSTNAME", (at_callback)get_sta_hostname, (at_callback)set_sta_hostname, 0, 0);
 }

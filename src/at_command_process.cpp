@@ -22,6 +22,7 @@ void process_at_commands()
       // Input is too long
       if (readString.length() > AT_MAX_TEMP_STRING)
       {
+        Serial.println();
         Serial.println(AT_ERROR_STRING);
         readString = "";
       }
@@ -34,13 +35,14 @@ void process_at_commands()
           // Simple echo
           if (readString == "AT")
           {
+            Serial.println();
             Serial.println(AT_OK_STRING);
             readString = "";
           }
           else
           {
             // Parsing the command
-            res = at_parse_line((string_t)readString.c_str(), (unsigned char*)ret);
+            res = at_parse_line((string_t)readString.c_str(), (unsigned char *)ret);
 
             readString = "";
 
@@ -51,15 +53,17 @@ void process_at_commands()
                 String s_ret(ret);
                 Serial.println(s_ret);
               }
+              Serial.println();
               Serial.println(AT_OK_STRING);
             }
             else
             {
+              Serial.println();
               Serial.println(AT_ERROR_STRING);
             }
           }
         }
       }
     } // end serial available
-  } // end while
+  }   // end while
 }
