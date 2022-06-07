@@ -494,3 +494,40 @@ OK
 **Parameters:**
 
 * ``<hostname>``: the host name of the Station. Maximum length: 32 bytes.
+
+## TCP/IP AT Commands
+
+### AT+CIPSERVER: Delete/create a TCP Server
+
+**Query Command:**
+
+```txt
+AT+CIPSERVER?
+```
+
+**Response:**
+
+```txt
++CIPSERVER:<mode>,<port>
+
+OK
+```
+
+**Set Command:**
+
+```txt
+AT+CIPSERVER=<mode>,<port>
+```
+
+**Response:**
+
+```txt
+OK
+```
+
+**Parameters:**
+
+* ``<mode>``:
+    0: delete a server.
+    1: create a server.
+* ``<port>``: represents the port number. Range: [1024,65535].

@@ -9,6 +9,7 @@
 #include "at_command_process.h"
 #include "basic_commands.h"
 #include "wifi_commands.h"
+#include "tcp_ip_commands.h"
 
 void setup()
 {
@@ -16,11 +17,13 @@ void setup()
 
   register_basic_commands();
   register_wifi_commands();
+  register_tcp_ip_commands();
 
   Serial.println("Ready");
 }
 
 void loop()
 {
+  process_tcp_server();
   process_at_commands();
 }

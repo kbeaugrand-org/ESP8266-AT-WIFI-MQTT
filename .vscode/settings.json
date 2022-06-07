@@ -3,6 +3,8 @@
         "APPSK",
         "APSSID",
         "bssid",
+        "CIPMUX",
+        "CIPSERVER",
         "CIPSTA",
         "CWDHCP",
         "CWHOSTNAME",

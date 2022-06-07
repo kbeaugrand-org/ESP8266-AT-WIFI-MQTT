@@ -4,10 +4,12 @@
 #include "at_command_process.h"
 #include "at_parser.h"
 
+#define BUFFER_SIZE 2048
+
 void process_at_commands()
 {
   static String readString = "";
-  char ret[50];
+  char ret[BUFFER_SIZE];
   char res;
 
   while (Serial.available())
