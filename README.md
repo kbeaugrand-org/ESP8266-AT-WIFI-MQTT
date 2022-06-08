@@ -543,7 +543,7 @@ AT+CIPRECVLEN?
 **Response:**
 
 ```txt
-+CIPRECVLEN:<data length of link>
++CIPRECVLEN:<chan>,<len>
 
 OK
 ```
@@ -558,13 +558,45 @@ OK
 **Set Command:**
 
 ```txt
-AT+CIPRECVDATA=<chan>,<len>
+AT+CIPRECVDATA=<chan>,<r_len>
 ```
 
 **Response:**
 
 ```txt
-+CIPRECVDATA:<data length of link>
+AT+CIPRECVDATA=<chan>,<a_len>,<remote_ip>,<remote_port>,<data>
 
 OK
 ```
+
+**Parameters:**
+
+* ``<chan>``: the channel identifier [0-3].
+* ``<r_len>``: length of the requested buffer.
+* ``<a_len>``: length of the data you actually obtain.
+    If the actual length of the received data is less than len, the actual length will be returned.
+* ``<remote_ip>``: string parameter showing the remote IPv4 address.
+* ``<remote_port>``: the remote port number.
+
+### AT+CIPSTATE: Obtain the TCP Connection Information
+
+**Query Command:**
+
+```txt
+AT+CIPSTATE?
+```
+
+**Response:**
+
+```txt
++CIPSTATE:<channel>,<remote_ip>,<remote_port>,<local_port>
+
+OK
+```
+
+**Parameters:**
+
+* ``<chan>``: the channel identifier [0-3].
+* ``<remote_ip>``: string parameter showing the remote IPv4 address.
+* ``<remote_port>``: the remote port number.
+* ``<local_port>``: the local port number.
