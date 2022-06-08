@@ -455,25 +455,6 @@ char set_dhcp_setting(char *value)
 }
 
 /**
- * Get Station IP information.
- *
- * @param AT+CIPSTA?
- * @returns 
- * +CIPSTA:ip:<"ip">
- * +CIPSTA:gateway:<"gateway">
- * +CIPSTA:netmask:<"netmask">
- */
-char get_sta_ip_info(char *value)
-{
-  sprintf(value, "+CIPSTA:%s,%s,%s",
-          WiFi.localIP().toString().c_str(),
-          WiFi.gatewayIP().toString().c_str(),
-          WiFi.subnetMask().toString().c_str());
-
-  return AT_OK;
-}
-
-/**
  * Gets the Station hostname.
  *
  * @param AT+CWHOSTNAME?
@@ -507,16 +488,15 @@ char get_sta_hostname(char *value)
  */
 void register_wifi_commands()
 {
-  at_register_command((string_t) "CWMODE", (at_callback)get_wifi_mode, (at_callback)set_wifi_mode, 0, 0);
-  at_register_command((string_t) "CWSTATE", (at_callback)get_wifi_status, 0, 0, 0);
-  at_register_command((string_t) "CWJAP", (at_callback)get_station_settings, (at_callback)set_station_settings, 0, (at_callback)connect_station);
-  at_register_command((string_t) "CWRECONNCFG", (at_callback)get_reconnect, (at_callback)set_reconnect, 0, 0);
-  at_register_command((string_t) "CWLAP", 0, 0, 0, (at_callback)execute_get_list_ap);
-  at_register_command((string_t) "CWQAP", 0, 0, 0, (at_callback)execute_disconnect_ap);
-  at_register_command((string_t) "CWSAP", (at_callback)get_access_point_settings, (at_callback)set_access_point_settings, 0, 0);
-  at_register_command((string_t) "CWLIF", 0, 0, 0, (at_callback)execute_get_connected_station);
-  at_register_command((string_t) "CWQIF", 0, 0, 0, (at_callback)execute_disconnect_station);
-  at_register_command((string_t) "CWDHCP", (at_callback)get_dhcp_setting, (at_callback)set_dhcp_setting, 0, 0);
-  at_register_command((string_t) "CIPSTA", (at_callback)get_sta_ip_info, 0, 0, 0);
-  at_register_command((string_t) "CWHOSTNAME", (at_callback)get_sta_hostname, (at_callback)set_sta_hostname, 0, 0);
+  at_register_command("CWMODE", (at_callback)get_wifi_mode, (at_callback)set_wifi_mode, 0, 0);
+  at_register_command("CWSTATE", (at_callback)get_wifi_status, 0, 0, 0);
+  at_register_command("CWJAP", (at_callback)get_station_settings, (at_callback)set_station_settings, 0, (at_callback)connect_station);
+  at_register_command("CWRECONNCFG", (at_callback)get_reconnect, (at_callback)set_reconnect, 0, 0);
+  at_register_command("CWLAP", 0, 0, 0, (at_callback)execute_get_list_ap);
+  at_register_command("CWQAP", 0, 0, 0, (at_callback)execute_disconnect_ap);
+  at_register_command("CWSAP", (at_callback)get_access_point_settings, (at_callback)set_access_point_settings, 0, 0);
+  at_register_command("CWLIF", 0, 0, 0, (at_callback)execute_get_connected_station);
+  at_register_command("CWQIF", 0, 0, 0, (at_callback)execute_disconnect_station);
+  at_register_command("CWDHCP", (at_callback)get_dhcp_setting, (at_callback)set_dhcp_setting, 0, 0);
+  at_register_command("CWHOSTNAME", (at_callback)get_sta_hostname, (at_callback)set_sta_hostname, 0, 0);
 }

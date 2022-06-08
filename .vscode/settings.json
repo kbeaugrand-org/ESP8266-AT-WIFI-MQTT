@@ -4,8 +4,11 @@
         "APSSID",
         "bssid",
         "CIPMUX",
+        "CIPRECVDATA",
+        "CIPRECVLEN",
         "CIPSERVER",
         "CIPSTA",
+        "CIPSTATE",
         "CWDHCP",
         "CWHOSTNAME",
         "CWJAP",
@@ -19,16 +22,23 @@
         "CWSTATE",
         "dhcpc",
         "dhcps",
+        "fdev",
         "freqcal",
         "GSLP",
         "millis",
+        "MQTT",
         "reconncfg",
         "rssi",
         "softap",
-        "SSID"
+        "SSID",
+        "uartout",
+        "xlogging"
     ],
     "files.associations": {
         "string": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "random": "cpp",
+        "system_error": "cpp",
+        "cmath": "cpp"
     }
 }

@@ -48,7 +48,7 @@ char list_all_commands(char *value) {
 
 void register_basic_commands()
 {
-    at_register_command((string_t)"RST", 0, 0, 0, (at_callback)reset);
-    at_register_command((string_t)"GMR", 0, 0, 0, (at_callback)check_version_information);
-    at_register_command((string_t)"CMD", (at_callback)list_all_commands, 0, 0, 0);
+    at_register_command("RST", 0, 0, 0, (at_callback)reset);
+    at_register_command("GMR", 0, 0, 0, (at_callback)check_version_information);
+    at_register_command("CMD", (at_callback)list_all_commands, 0, 0, 0);
 }

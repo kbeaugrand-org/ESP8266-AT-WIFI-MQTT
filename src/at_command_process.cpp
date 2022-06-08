@@ -3,6 +3,7 @@
 
 #include "at_command_process.h"
 #include "at_parser.h"
+#include "logging.h"
 
 #define BUFFER_SIZE 2048
 
@@ -24,6 +25,7 @@ void process_at_commands()
       // Input is too long
       if (readString.length() > AT_MAX_TEMP_STRING)
       {
+        LogErr("Input is too long");
         Serial.println();
         Serial.println(AT_ERROR_STRING);
         readString = "";
@@ -44,13 +46,13 @@ void process_at_commands()
           else
           {
             // Parsing the command
-            res = at_parse_line((string_t)readString.c_str(), (unsigned char *)ret);
+            res = at_parse_line(readString.c_str(), (unsigned char *)ret);
 
             readString = "";
 
             if (res == AT_OK)
             {
-              if (ms_strlen((string_t)ret) > 0)
+              if (ms_strlen(ret) > 0)
               {
                 String s_ret(ret);
                 Serial.println(s_ret);
