@@ -10,7 +10,7 @@ typedef char (*at_callback)(unsigned char *value);
 typedef struct _at_command
 {
     unsigned long hash;
-    string_t name;
+    const char *name;
     at_callback setter;
     at_callback getter;
     at_callback test;
@@ -43,9 +43,9 @@ extern "C"{
 
 extern AT_COMMAND at_registered_commands[AT_COMMANDS_NUM];
 
-unsigned long at_hash(string_t str);
-void at_register_command(string_t command, at_callback getter, at_callback setter, at_callback test, at_callback execute);
-char at_parse_line(string_t line, unsigned char *ret);
+unsigned long at_hash(const char *str);
+void at_register_command(const char *command, at_callback getter, at_callback setter, at_callback test, at_callback execute);
+char at_parse_line(const char *line, unsigned char *ret);
 
 #ifdef __cplusplus
 } // extern "C"

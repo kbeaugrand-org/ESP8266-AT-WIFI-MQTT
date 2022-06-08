@@ -7,9 +7,9 @@
 extern "C"{
 #endif
 
-int16_t ms_str_find(string_t haystack, string_t needle);
-void ms_array_slice_to_string(string_t array, uint16_t start, uint16_t end, unsigned char *ret);
-uint16_t ms_strlen(string_t string);
+int16_t ms_str_find(const char *haystack, const char * needle);
+void ms_array_slice_to_string(const char * array, uint16_t start, uint16_t end, char *ret);
+uint16_t ms_strlen(const char * string);
 
 #ifdef __cplusplus
 } // extern "C"

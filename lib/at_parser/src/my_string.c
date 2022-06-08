@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-uint16_t ms_strlen(string_t string)
+uint16_t ms_strlen(const char * string)
 {
 	uint16_t i;
 	for(i = 0; *string; i++, string++);
@@ -18,7 +18,7 @@ void ms_shift_array(char *array, uint16_t len)
 	}
 }
 
-char ms_str_equal(string_t string1, uint16_t len1, string_t string2, uint16_t len2)
+char ms_str_equal(const char * string1, uint16_t len1, const char * string2, uint16_t len2)
 {
 	int i;
 	
@@ -33,7 +33,7 @@ char ms_str_equal(string_t string1, uint16_t len1, string_t string2, uint16_t le
 	return 1;
 }
 
-int16_t ms_str_find(string_t haystack, string_t needle)
+int16_t ms_str_find(const char * haystack, const char * needle)
 {
 	int i;
 	uint16_t needle_len = ms_strlen(needle);
@@ -91,7 +91,7 @@ uint16_t ms_array_to_number(char * array, uint16_t max_buffer, uint16_t reverse_
 	return ret;
 }
 
-void ms_array_slice_to_string(string_t array, uint16_t start, uint16_t end, unsigned char *ret)
+void ms_array_slice_to_string(const char * array, uint16_t start, uint16_t end, char *ret)
 {
 	uint16_t i, n = 0;
 	

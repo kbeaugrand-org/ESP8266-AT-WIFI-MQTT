@@ -1,8 +1,10 @@
 #include "at_parser.h"
+#include <Arduino.h>
+#include "logging.h"
 
 AT_COMMAND at_registered_commands[AT_COMMANDS_NUM];
 
-unsigned long at_hash(string_t str)
+unsigned long at_hash(const char *str)
 {
     unsigned long hash = 5381;
     int c;
@@ -13,7 +15,7 @@ unsigned long at_hash(string_t str)
     return hash;
 }
 
-void at_register_command(string_t command, at_callback getter, at_callback setter, at_callback test, at_callback execute)
+void at_register_command(const char *command, at_callback getter, at_callback setter, at_callback test, at_callback execute)
 {
     int i;
     AT_COMMAND new_cmd;
@@ -34,7 +36,7 @@ void at_register_command(string_t command, at_callback getter, at_callback sette
     }
 }
 
-char at_execute_command(string_t command, unsigned char *value, unsigned char type)
+char at_execute_command(const char *command, unsigned char *value, unsigned char type)
 {
     int i;
     
@@ -53,6 +55,8 @@ char at_execute_command(string_t command, unsigned char *value, unsigned char ty
                     {
                         return AT_ERROR;
                     }
+
+                    LogInfo("Set %s - %s", at_registered_commands[i].name, value);
                     result = at_registered_commands[i].setter(value);
                     break;
                 case AT_PARSER_STATE_READ:
@@ -60,6 +64,8 @@ char at_execute_command(string_t command, unsigned char *value, unsigned char ty
                     {
                         return AT_ERROR;
                     }
+
+                    LogInfo("Query %s", at_registered_commands[i].name);
                     result = at_registered_commands[i].getter(value);
                     break;
                 case AT_PARSER_STATE_TEST:
@@ -67,6 +73,8 @@ char at_execute_command(string_t command, unsigned char *value, unsigned char ty
                     {
                         return AT_ERROR;
                     }
+
+                    LogInfo("Test %s - %s", at_registered_commands[i].name, value);
                     result = at_registered_commands[i].test(value);
                     break;
                 case AT_PARSER_STATE_COMMAND:
@@ -74,6 +82,8 @@ char at_execute_command(string_t command, unsigned char *value, unsigned char ty
                     {
                         return AT_ERROR;
                     }
+
+                    LogInfo("Execute %s", at_registered_commands[i].name);
                     result = at_registered_commands[i].execute(value);
                     break;            
                 default:
@@ -94,7 +104,7 @@ char at_execute_command(string_t command, unsigned char *value, unsigned char ty
  
  */
 
-char at_parse_line(string_t line, unsigned char *ret)
+char at_parse_line(const char *line, unsigned char *ret)
 {
     uint16_t i;
     
@@ -102,7 +112,7 @@ char at_parse_line(string_t line, unsigned char *ret)
     
     char state = AT_PARSER_STATE_COMMAND;
         
-    int16_t start = ms_str_find(line, (string_t)AT_COMMAND_MARKER);
+    int16_t start = ms_str_find(line, AT_COMMAND_MARKER);
     
     uint16_t line_len = ms_strlen(line);
     
@@ -110,12 +120,12 @@ char at_parse_line(string_t line, unsigned char *ret)
     
     int16_t index_command_end = line_len - 1;
     
-    unsigned char temp[AT_MAX_TEMP_STRING];
+    const char temp[AT_MAX_TEMP_STRING];
     
     if(start >= 0)
     {
         // Skip the marker
-        start += ms_strlen((string_t)AT_COMMAND_MARKER);
+        start += ms_strlen(AT_COMMAND_MARKER);
         
         for(i = start; i < line_len; i++)
         {
@@ -155,15 +165,15 @@ char at_parse_line(string_t line, unsigned char *ret)
             case AT_PARSER_STATE_COMMAND:
             case AT_PARSER_STATE_READ:
             case AT_PARSER_STATE_TEST:
-                ms_array_slice_to_string(line, start, index_command_end, temp);
+                ms_array_slice_to_string(line, start, index_command_end, (char *)temp);
                 result = at_execute_command(temp, ret, state);
                 break;
             
             case AT_PARSER_STATE_WRITE:
-                ms_array_slice_to_string(line, start, index_command_end, temp);
+                ms_array_slice_to_string(line, start, index_command_end, (char *)temp);
                 if(index_write_start <= (line_len - 1))
                 {
-                    ms_array_slice_to_string(line, index_write_start, line_len - 1, ret);
+                    ms_array_slice_to_string(line, index_write_start, line_len - 1, (char *)ret);
                     result = at_execute_command(temp, ret, state);
                     ret[0] = 0;
                 }
