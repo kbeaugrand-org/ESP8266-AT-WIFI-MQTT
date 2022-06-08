@@ -8,17 +8,17 @@
 
 #include <ESP8266WiFi.h>
 
-#define MAX_BUFFER_SIE 1024
-#define MAX_CLIENT_COUNT 1
+#define MAX_BUFFER_SIZE 1024
+#define MAX_CLIENT_COUNT 4
+#define MAX_SERVER_COUNT 4
 
 WiFiServer *tcpServer = nullptr;
-WiFiClient **tcpClients = (WiFiClient **)malloc(sizeof(WiFiClient *) * MAX_CLIENT_COUNT);
+WiFiClient tcpClients[MAX_CLIENT_COUNT];
 
 bool tcpServerStarted = false;
-bool connectedChannels[MAX_CLIENT_COUNT] = {};
 
-char TCP_RX_BUFFER[MAX_CLIENT_COUNT][MAX_BUFFER_SIE] = {};
-char TCP_TX_BUFFER[MAX_CLIENT_COUNT][MAX_BUFFER_SIE] = {};
+char TCP_RX_BUFFER[MAX_CLIENT_COUNT][MAX_BUFFER_SIZE] = {};
+char TCP_TX_BUFFER[MAX_CLIENT_COUNT][MAX_BUFFER_SIZE] = {};
 int TCP_RX_BYTES[MAX_CLIENT_COUNT] = {};
 
 /**
@@ -27,7 +27,7 @@ int TCP_RX_BYTES[MAX_CLIENT_COUNT] = {};
  * @param client
  * @return int representing the channel ID for the client.
  */
-int register_client(WiFiClient *client)
+int register_client(WiFiClient client)
 {
     // Find corresponding client
     for (int i = 0; i < MAX_CLIENT_COUNT; i++)
@@ -39,7 +39,7 @@ int register_client(WiFiClient *client)
 
         // Server has already this client.
         // Re-affecting the channel
-        if (tcpClients[i]->remoteIP() == client->remoteIP() && tcpClients[i]->remotePort() == client->remotePort())
+        if (tcpClients[i].remoteIP() == client.remoteIP() && tcpClients[i].remotePort() == client.remotePort())
         {
             LogTrace("Re-affecting client %d to %d", &client, i);
             tcpClients[i] = client;
@@ -193,17 +193,26 @@ char get_server_data(char *value)
 {
     int len;
     int chan;
-    sscanf(value, "%d,%d", &chan, &len);
 
-    char buffer[len];
-    memcpy(TCP_RX_BUFFER, buffer, sizeof(buffer));
+    sscanf(value, "%d,%d", &chan, &len);
 
     if (chan < 0 || chan > 9)
     {
         return AT_ERROR;
     }
 
-    sprintf(value, "+CIPRECVDATA:%d,%s", TCP_RX_BYTES[chan], TCP_RX_BUFFER[chan]);
+    LogTrace("Reading %d bytes from channel %d", len, chan);
+
+    if (len > TCP_RX_BYTES[chan])
+    {
+        LogTrace("Actual length of the received data of channel %d is less than %d, the actual length %d will be returned.", chan, len, TCP_RX_BYTES[chan]);
+        len = TCP_RX_BYTES[chan];
+    }
+
+    char *buffer = (char *)malloc(len + 1);
+    memcpy(buffer, TCP_RX_BUFFER, len);
+
+    Serial.printf("+CIPRECVDATA:%d,%s\n", TCP_RX_BYTES[chan], TCP_RX_BUFFER[chan]);
     TCP_RX_BYTES[chan] = 0;
 
     free(buffer);
@@ -225,30 +234,38 @@ void process_existing_channels()
             continue;
         }
 
-        if (!tcpClients[channelID]->connected())
+        if (!tcpClients[channelID].connected())
         {
-            LogTrace("Client is not connected.");
+            LogTrace("Client on channel %d is not connected.", channelID);
             continue;
         }
 
-        int available = tcpClients[channelID]->available();
+        int available = tcpClients[channelID].available();
 
         if (!available)
         {
-            LogInfo("Client connected without posting data.");
             continue;
         }
 
-        char buffer[available];
-        int bytes = tcpClients[channelID]->readBytes(buffer, available <= 1024 ? available : 1024);
+        LogInfo("Reading data on channel %d.", channelID);
 
-        memcpy(buffer, TCP_RX_BUFFER[channelID] + TCP_RX_BYTES[channelID], bytes);
+        int free = MAX_BUFFER_SIZE - TCP_RX_BYTES[channelID];
+
+        if (free < available)
+        {
+            LogWarn("No sufficient space on buffer for channel %d. Need %d but ony %d free.", channelID, available, free);
+            return;
+        }
+
+        int bytes = tcpClients[channelID].readBytes(TCP_RX_BUFFER[channelID] + TCP_RX_BYTES[channelID], available);
 
         TCP_RX_BYTES[channelID] += bytes;
+
         LogTrace("Got %d bytes on channel %d - Now %d bytes are waiting.", bytes, channelID, TCP_RX_BYTES[channelID]);
+        LogTrace("%d;%s", channelID, TCP_RX_BUFFER[channelID]);
 
         Serial.print("+CIPRECVLEN:");
-        Serial.println(channelID);
+        Serial.print(channelID);
         Serial.print(",");
         Serial.println(TCP_RX_BYTES[channelID]);
     }
@@ -286,7 +303,7 @@ void process_tcp_server()
         return;
     }
 
-    int channelID = register_client(&client);
+    int channelID = register_client(client);
 
     if (channelID < 0)
     {
@@ -316,11 +333,11 @@ char get_connections_status(char *value)
         Serial.print("+CIPSTATE:");
         Serial.print(i);
         Serial.print(",");
-        Serial.print(tcpClients[i]->remoteIP().toString());
+        Serial.print(tcpClients[i].remoteIP().toString());
         Serial.print(",");
-        Serial.print(tcpClients[i]->remotePort());
+        Serial.print(tcpClients[i].remotePort());
         Serial.print(",");
-        Serial.println(tcpClients[i]->localPort());
+        Serial.println(tcpClients[i].localPort());
     }
 
     return AT_OK;
