@@ -531,3 +531,40 @@ OK
     0: delete a server.
     1: create a server.
 * ``<port>``: represents the port number. Range: [1024,65535].
+
+### AT+CIPRECVLEN: Obtain Socket Data Length in Passive Receiving Mode
+
+**Query Command:**
+
+```txt
+AT+CIPRECVLEN?
+```
+
+**Response:**
+
+```txt
++CIPRECVLEN:<data length of link>
+
+OK
+```
+
+**Parameters:**
+
+* ``<chan>``: the channel identifier [0-3].
+* ``<len>``: length of the entire data buffered for the connection.
+
+### AT+CIPRECVDATA: Obtain Socket Data in Passive Receiving Mode
+
+**Set Command:**
+
+```txt
+AT+CIPRECVDATA=<chan>,<len>
+```
+
+**Response:**
+
+```txt
++CIPRECVDATA:<data length of link>
+
+OK
+```

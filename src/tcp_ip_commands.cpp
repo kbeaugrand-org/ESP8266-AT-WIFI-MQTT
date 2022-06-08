@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "at_parser.h"
 #include "logging.h"
+#include "Array.h"
 
 #include "common.h"
 #include "tcp_ip_commands.h"
@@ -12,10 +13,10 @@
 #define MAX_CLIENT_COUNT 4
 #define MAX_SERVER_COUNT 4
 
-WiFiServer *tcpServer = nullptr;
-WiFiClient tcpClients[MAX_CLIENT_COUNT];
-
 bool tcpServerStarted = false;
+WiFiServer *tcpServer = nullptr;
+
+Array<WiFiClient, MAX_CLIENT_COUNT> tcpClients;
 
 char TCP_RX_BUFFER[MAX_CLIENT_COUNT][MAX_BUFFER_SIZE] = {};
 char TCP_TX_BUFFER[MAX_CLIENT_COUNT][MAX_BUFFER_SIZE] = {};
@@ -29,39 +30,10 @@ int TCP_RX_BYTES[MAX_CLIENT_COUNT] = {};
  */
 int register_client(WiFiClient client)
 {
-    // Find corresponding client
-    for (int i = 0; i < MAX_CLIENT_COUNT; i++)
-    {
-        if (!tcpClients[i])
-        {
-            continue;
-        }
+    LogDebug("Registering client %s:%d in channel %d", client.remoteIP().toString().c_str(), client.remotePort(), tcpClients.size());
+    tcpClients.push_back(client);
 
-        // Server has already this client.
-        // Re-affecting the channel
-        if (tcpClients[i].remoteIP() == client.remoteIP() && tcpClients[i].remotePort() == client.remotePort())
-        {
-            LogTrace("Re-affecting client %d to %d", &client, i);
-            tcpClients[i] = client;
-            return i;
-        }
-    }
-
-    for (int i = 0; i < MAX_CLIENT_COUNT; i++)
-    {
-        if (tcpClients[i])
-        {
-            continue;
-        }
-
-        LogTrace("Registering client %d to %d", &client, i);
-        tcpClients[i] = client;
-        return i;
-    }
-
-    LogWarn("Failed to register client %d", &client);
-
-    return -1;
+    return tcpClients.size() - 1;
 }
 
 /**
@@ -169,15 +141,10 @@ char get_sta_ip_info(char *value)
  */
 char get_server_data_len(char *value)
 {
-    for (int i = 0; i < MAX_CLIENT_COUNT; i++)
-    {
-        if (!tcpClients[i])
-        {
-            LogTrace("TcpClient[%d] is null", i);
-            continue;
-        }
+    LogTrace("%d clients are connected.", tcpClients.size());
 
-        LogTrace("TcpClient[%d] is %d", i, tcpClients[i]);
+    for (size_t i = 0; i < tcpClients.size(); i++)
+    {
         Serial.printf("+CIPRECVLEN:%d,%d\n", i, TCP_RX_BYTES[i]);
     }
 
@@ -188,6 +155,8 @@ char get_server_data_len(char *value)
  * @brief Obtain Socket Data in Passive Receiving Mode
  *
  * @param AT+CIPRECVDATA=<chan>,<len>
+ * @returns +CIPRECVDATA:<actual_len>,<remote_ip>,<remote port>,<data>
+ *
  */
 char get_server_data(char *value)
 {
@@ -212,12 +181,39 @@ char get_server_data(char *value)
     char *buffer = (char *)malloc(len + 1);
     memcpy(buffer, TCP_RX_BUFFER, len);
 
-    Serial.printf("+CIPRECVDATA:%d,%s\n", TCP_RX_BYTES[chan], TCP_RX_BUFFER[chan]);
+    WiFiClient client = tcpClients[chan];
+
+    Serial.printf("+CIPRECVDATA:%d,%s,%d,%s\n", TCP_RX_BYTES[chan], client.remoteIP().toString().c_str(), client.remotePort(), TCP_RX_BUFFER[chan]);
     TCP_RX_BYTES[chan] = 0;
 
     free(buffer);
 
     return AT_OK;
+}
+
+/**
+ * @brief Remove from pool connections that are closed.
+ *
+ */
+void remove_closed_tcp_clients()
+{
+    Array<int, MAX_CLIENT_COUNT> chan;
+
+    for (size_t channelID = 0; channelID < tcpClients.size(); channelID++)
+    {
+        if (tcpClients[channelID].status() == CLOSED
+            || !tcpClients[channelID].connected())
+        {
+            LogTrace("Client on channel %d is not connected.", channelID);
+            chan.push_back(channelID);
+        }
+    }
+
+    for (int channelID : chan)
+    {
+        tcpClients.remove(channelID);
+        TCP_RX_BYTES[channelID] = 0;
+    }
 }
 
 /**
@@ -227,19 +223,10 @@ char get_server_data(char *value)
  */
 void process_existing_channels()
 {
-    for (int channelID = 0; channelID < MAX_CLIENT_COUNT; channelID++)
+    remove_closed_tcp_clients();
+
+    for (size_t channelID = 0; channelID < tcpClients.size(); channelID++)
     {
-        if (!tcpClients[channelID])
-        {
-            continue;
-        }
-
-        if (!tcpClients[channelID].connected())
-        {
-            LogTrace("Client on channel %d is not connected.", channelID);
-            continue;
-        }
-
         int available = tcpClients[channelID].available();
 
         if (!available)

@@ -1,0 +1,6 @@
+[submodule "lib/vector"]
+	path = lib/vector
+	url = https://github.com/janelia-arduino/Vector.git
+[submodule "lib/array"]
+	path = lib/array
+	url = https://github.com/janelia-arduino/Array.git
