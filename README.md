@@ -629,6 +629,7 @@ If data is transmitted successfully, the system returns:
 
 ```txt
 SEND OK
+
 OK
 ```
 
