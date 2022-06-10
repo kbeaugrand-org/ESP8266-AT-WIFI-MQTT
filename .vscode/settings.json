@@ -6,6 +6,7 @@
         "CIPMUX",
         "CIPRECVDATA",
         "CIPRECVLEN",
+        "CIPSEND",
         "CIPSERVER",
         "CIPSTA",
         "CIPSTATE",
