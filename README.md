@@ -600,3 +600,39 @@ OK
 * ``<remote_ip>``: string parameter showing the remote IPv4 address.
 * ``<remote_port>``: the remote port number.
 * ``<local_port>``: the local port number.
+
+### AT+CIPSEND: Send Data in the Normal Transmission Mode
+
+**Set Command:**
+
+```txt
+AT+CIPSEND=<chan>,<len>
+```
+
+**Response:**
+
+```txt
+OK
+
+>
+```
+
+This response indicates that AT is ready for receiving serial data. You should enter the data, and when the data length reaches the ``<len>`` value, the transmission of data starts.
+
+If the connection cannot be established or is disrupted during data transmission, the system returns:
+
+```txt
+ERROR
+```
+
+If data is transmitted successfully, the system returns:
+
+```txt
+SEND OK
+OK
+```
+
+**Parameters:**
+
+* ``<chan>``: the channel identifier [0-3].
+* ``<len>``: length of the data to send.

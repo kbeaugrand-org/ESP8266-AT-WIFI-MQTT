@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "tcp_ip_commands.h"
+#include "at_command_process.h"
 
 #include <ESP8266WiFi.h>
 
@@ -18,8 +19,8 @@ WiFiServer *tcpServer = nullptr;
 
 Array<WiFiClient, MAX_CLIENT_COUNT> tcpClients;
 
+char TCP_TX_BUFFER[4096] = {};
 char TCP_RX_BUFFER[MAX_CLIENT_COUNT][MAX_BUFFER_SIZE] = {};
-char TCP_TX_BUFFER[MAX_CLIENT_COUNT][MAX_BUFFER_SIZE] = {};
 int TCP_RX_BYTES[MAX_CLIENT_COUNT] = {};
 
 /**
@@ -201,8 +202,7 @@ void remove_closed_tcp_clients()
 
     for (size_t channelID = 0; channelID < tcpClients.size(); channelID++)
     {
-        if (tcpClients[channelID].status() == CLOSED
-            || !tcpClients[channelID].connected())
+        if (tcpClients[channelID].status() == CLOSED || !tcpClients[channelID].connected())
         {
             LogTrace("Client on channel %d is not connected.", channelID);
             chan.push_back(channelID);
@@ -331,6 +331,84 @@ char get_connections_status(char *value)
 }
 
 /**
+ * @brief Sends the data to the client at specified channel.
+ *
+ * @param AT+CIPSEND=<link_ID>,<length>
+ * @return  OK
+ *          >
+ */
+char send_data(char *value)
+{
+    unsigned long len;
+    unsigned int chan;
+
+    sscanf(value, "%d,%lu", &chan, &len);
+
+    if (len > sizeof(TCP_TX_BUFFER))
+    {
+        LogErr("Length of the data to send (%d) is greater than the buffer size (%d).", len, TCP_TX_BUFFER);
+        return AT_ERROR;
+    }
+
+    if (chan >= tcpClients.size())
+    {
+        LogWarn("Specified chan %d is not present (%d chanels currently connected).", chan, tcpClients.size());
+        return AT_ERROR;
+    }
+
+    LogTrace("Preparing to send %lu bytes to channel %d", len, chan);
+
+    WiFiClient client = tcpClients[chan];
+
+    if (!client.connected())
+    {
+        LogErr("Client is not connected.");
+        return AT_ERROR;
+    }
+
+    stop_at_processing = true;
+
+    Serial.println("OK");
+    Serial.print("> ");
+
+    unsigned long read = 0;
+
+    while (read < len)
+    {
+        if (!Serial.available())
+        {
+            continue;
+        }
+
+        char byte = Serial.read();
+        TCP_TX_BUFFER[read++] = byte;
+    }
+
+    LogTrace("Sending %lu bytes to channel %d\n%s", len, chan, TCP_TX_BUFFER);
+
+    unsigned long sent = client.write(TCP_TX_BUFFER, len);
+
+    if (sent != len)
+    {
+        LogErr("Failed to send %lu bytes to channel %d", len, chan);
+        stop_at_processing = false;
+
+        return AT_ERROR;
+    }
+
+    Serial.print("SEND OK");
+
+    while (Serial.available())
+        Serial.read();
+
+    Serial.flush();
+
+    stop_at_processing = false;
+
+    return AT_OK;
+}
+
+/**
  * Registers the TCP/IP commands.
  *
  */
@@ -341,4 +419,5 @@ void register_tcp_ip_commands()
     at_register_command("CIPRECVLEN", (at_callback)get_server_data_len, 0, 0, 0);
     at_register_command("CIPRECVDATA", 0, (at_callback)get_server_data, 0, 0);
     at_register_command("CIPSTATE", (at_callback)get_connections_status, 0, 0, 0);
+    at_register_command("CIPSEND", 0, (at_callback)send_data, 0, 0);
 }

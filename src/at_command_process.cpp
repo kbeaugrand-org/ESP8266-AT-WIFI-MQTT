@@ -7,11 +7,18 @@
 
 #define BUFFER_SIZE 2048
 
+bool stop_at_processing = false;
+
 void process_at_commands()
 {
   static String readString = "";
   char ret[BUFFER_SIZE];
   char res;
+
+  if (stop_at_processing)
+  {
+    return;
+  }
 
   while (Serial.available())
   {
