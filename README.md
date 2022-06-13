@@ -158,7 +158,11 @@ OK
 
 **Parameters:**
 
-* ``<time>``: the duration of the device’s deep sleep. Unit: ms.ESP device will automatically wake up after the deep-sleep for as many milliseconds (ms) as ``<time>`` indicates.Upon waking up, the device calls deep sleep wake stub, and then proceeds to load application.
+* ``<mode>``:
+    0: Null mode. Wi-Fi RF will be disabled.
+    1: Station mode.
+    2: SoftAP mode.
+    3: SoftAP+Station mode.
 
 ### AT+CWSTATE: Query the Wi-Fi state and Wi-Fi information
 

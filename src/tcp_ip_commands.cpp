@@ -156,7 +156,7 @@ char get_server_data_len(char *value)
  * @brief Obtain Socket Data in Passive Receiving Mode
  *
  * @param AT+CIPRECVDATA=<chan>,<len>
- * @returns +CIPRECVDATA:<actual_len>,<remote_ip>,<remote port>,<data>
+ * @returns +CIPRECVDATA=<chan>,<a_len>,<remote_ip>,<remote_port>,<data>
  *
  */
 char get_server_data(char *value)
@@ -184,7 +184,13 @@ char get_server_data(char *value)
 
     WiFiClient client = tcpClients[chan];
 
-    Serial.printf("+CIPRECVDATA:%d,%s,%d,%s\n", TCP_RX_BYTES[chan], client.remoteIP().toString().c_str(), client.remotePort(), TCP_RX_BUFFER[chan]);
+    Serial.printf("+CIPRECVDATA:%d,%d,%s,%d\n", chan, TCP_RX_BYTES[chan], client.remoteIP().toString().c_str(), client.remotePort());
+
+    for (int i = 0; i < len; i++)
+    {
+        Serial.print(TCP_RX_BUFFER[chan][i]);
+    }
+
     TCP_RX_BYTES[chan] = 0;
 
     free(buffer);
@@ -244,17 +250,28 @@ void process_existing_channels()
             return;
         }
 
-        int bytes = tcpClients[channelID].readBytes(TCP_RX_BUFFER[channelID] + TCP_RX_BYTES[channelID], available);
+        int offset = 0;
 
-        TCP_RX_BYTES[channelID] += bytes;
+        while (tcpClients[channelID].available())
+        {
+            char c = tcpClients[channelID].read();
 
-        LogTrace("Got %d bytes on channel %d - Now %d bytes are waiting.", bytes, channelID, TCP_RX_BYTES[channelID]);
-        LogTrace("%d;%s", channelID, TCP_RX_BUFFER[channelID]);
+            TCP_RX_BUFFER[channelID][TCP_RX_BYTES[channelID] + offset++] = c;
 
-        Serial.print("+CIPRECVLEN:");
-        Serial.print(channelID);
-        Serial.print(",");
-        Serial.println(TCP_RX_BYTES[channelID]);
+            if (c == '\n')
+            {
+                TCP_RX_BYTES[channelID] += offset;
+
+                LogTrace("Got %d bytes on channel %d - Now %d bytes are waiting.", offset, channelID, TCP_RX_BYTES[channelID]);
+                LogTrace("%d;%s", channelID, TCP_RX_BUFFER[channelID]);
+
+                Serial.print("+CIPRECVLEN:");
+                Serial.print(channelID);
+                Serial.print(",");
+                Serial.println(TCP_RX_BYTES[channelID]);
+                break;
+            }
+        }
     }
 }
 
