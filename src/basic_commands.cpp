@@ -7,7 +7,6 @@
 
 void reset() {
     Serial.println("OK");
-    delay(1000);
     ESP.restart();
 }
 

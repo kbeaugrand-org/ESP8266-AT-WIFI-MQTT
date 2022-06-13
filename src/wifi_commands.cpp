@@ -4,6 +4,7 @@
 #include "ESP8266WiFiType.h"
 
 #include "at_parser.h"
+#include <logging.h>
 
 /**
  * Formats the WiFi Status.
@@ -323,24 +324,46 @@ char set_access_point_settings(char *value)
   int channel;
   int ecn;
   int hidden;
+  int max_connection;
 
   bool result = false;
 
-  sscanf(value, "\"%[^\"]\",\"%[^\"]\",%d,%d,%d", ssid, pwd, &channel, &ecn, &hidden);
+  sscanf(value, "\"%[^\"]\",\"%[^\"]\",%d,%d,%d,%d", ssid, pwd, &channel, &ecn, &max_connection,&hidden);
+
+  IPAddress local_IP(192,168,4,1);
+  IPAddress gateway(192,168,4,1);
+  IPAddress subnet(255,255,255,0);
+
+  LogDebug("Configuring access point...");
+  LogDebug("local_IP: %s", local_IP.toString().c_str());
+  WiFi.softAPConfig(local_IP, gateway, subnet);
+
+  LogDebug("Configuring softAP...");
+  LogDebug("ssid: %s", ssid);
+  LogDebug("pwd: %s", pwd);
+  LogDebug("channel: %d", channel);
+  LogDebug("ecn: %d", ecn);
+  LogDebug("max_connection: %d", max_connection);
+  LogDebug("hidden: %d", hidden);
+
+  LogDebug("Setting softAP...");
+  WiFi.mode(WIFI_AP);
 
   if (ecn == 0)
   {
-    result = WiFi.softAP(ssid, NULL, channel, hidden);
+    LogDebug("Encryption: Open");
+    result = WiFi.softAP(ssid, NULL, channel, hidden, max_connection);
   }
   else if (ecn == 1)
   {
+    LogDebug("Encryption: WEP");
     WiFi.enableInsecureWEP(true);
-    result = WiFi.softAP(ssid, pwd, channel, hidden);
+    result = WiFi.softAP(ssid, pwd, channel, hidden, max_connection);
   }
   else
   {
-    WiFi.enableInsecureWEP(false);
-    result = WiFi.softAP(ssid, pwd, channel, hidden);
+    LogDebug("Encryption: WPA2");
+    result = WiFi.softAP(ssid, pwd, channel, hidden, max_connection);
   }
 
   return result ? AT_OK : AT_ERROR;

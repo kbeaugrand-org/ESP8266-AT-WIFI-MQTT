@@ -3,7 +3,7 @@
 
 #include "my_string.h"
 
-#define AT_MAX_TEMP_STRING	50
+#define AT_MAX_TEMP_STRING	512
 
 typedef char (*at_callback)(unsigned char *value);
 

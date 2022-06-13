@@ -43,8 +43,11 @@ void process_at_commands()
         {
           readString.trim();
 
-          // Simple echo
-          if (readString == "AT")
+          if (!readString.startsWith("AT"))
+          {
+            readString = "";
+          }
+          else if (readString == "AT")
           {
             Serial.println();
             Serial.println(AT_OK_STRING);
