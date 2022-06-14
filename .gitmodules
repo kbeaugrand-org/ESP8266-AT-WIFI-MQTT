@@ -4,3 +4,6 @@
 [submodule "lib/array"]
 	path = lib/array
 	url = https://github.com/janelia-arduino/Array.git
+[submodule "lib/logging"]
+	path = lib/logging
+	url = https://github.com/kbeaugrand/arduino-logging-library.git
