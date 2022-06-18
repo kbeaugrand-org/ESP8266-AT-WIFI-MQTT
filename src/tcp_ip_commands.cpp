@@ -1,14 +1,14 @@
 
 #include <Arduino.h>
+#include <Array.h>
+#include <ESP8266WiFi.h>
+
 #include "at_parser.h"
 #include "logging.h"
-#include "Array.h"
 
 #include "common.h"
 #include "tcp_ip_commands.h"
 #include "at_command_process.h"
-
-#include <ESP8266WiFi.h>
 
 #define MAX_BUFFER_SIZE 1024
 #define MAX_CLIENT_COUNT 4
@@ -31,7 +31,7 @@ int TCP_RX_BYTES[MAX_CLIENT_COUNT] = {};
  */
 int register_client(WiFiClient client)
 {
-    LogDebug("Registering client %s:%d in channel %d", client.remoteIP().toString().c_str(), client.remotePort(), tcpClients.size());
+    logdebug("Registering client %s:%d in channel %d\n", client.remoteIP().toString().c_str(), client.remotePort(), tcpClients.size());
     tcpClients.push_back(client);
 
     return tcpClients.size() - 1;
@@ -142,7 +142,7 @@ char get_sta_ip_info(char *value)
  */
 char get_server_data_len(char *value)
 {
-    LogTrace("%d clients are connected.", tcpClients.size());
+    logdebug("%d clients are connected.\n", tcpClients.size());
 
     for (size_t i = 0; i < tcpClients.size(); i++)
     {
@@ -171,11 +171,11 @@ char get_server_data(char *value)
         return AT_ERROR;
     }
 
-    LogTrace("Reading %d bytes from channel %d", len, chan);
+    logdebug("Reading %d bytes from channel %d\n", len, chan);
 
     if (len > TCP_RX_BYTES[chan])
     {
-        LogTrace("Actual length of the received data of channel %d is less than %d, the actual length %d will be returned.", chan, len, TCP_RX_BYTES[chan]);
+        logdebug("Actual length of the received data of channel %d is less than %d, the actual length %d will be returned.\n", chan, len, TCP_RX_BYTES[chan]);
         len = TCP_RX_BYTES[chan];
     }
 
@@ -210,7 +210,7 @@ void remove_closed_tcp_clients()
     {
         if (tcpClients[channelID].status() == CLOSED || !tcpClients[channelID].connected())
         {
-            LogTrace("Client on channel %d is not connected.", channelID);
+            logdebug("Client on channel %d is not connected.\n", channelID);
             chan.push_back(channelID);
         }
     }
@@ -240,13 +240,13 @@ void process_existing_channels()
             continue;
         }
 
-        LogInfo("Reading data on channel %d.", channelID);
+        loginfo("Reading data on channel %d.\n", channelID);
 
         int free = MAX_BUFFER_SIZE - TCP_RX_BYTES[channelID];
 
         if (free < available)
         {
-            LogWarn("No sufficient space on buffer for channel %d. Need %d but ony %d free.", channelID, available, free);
+            logwarning("No sufficient space on buffer for channel %d. Need %d but ony %d free.\n", channelID, available, free);
             return;
         }
 
@@ -262,8 +262,8 @@ void process_existing_channels()
             {
                 TCP_RX_BYTES[channelID] += offset;
 
-                LogTrace("Got %d bytes on channel %d - Now %d bytes are waiting.", offset, channelID, TCP_RX_BYTES[channelID]);
-                LogTrace("%d;%s", channelID, TCP_RX_BUFFER[channelID]);
+                logdebug("Got %d bytes on channel %d - Now %d bytes are waiting.\n", offset, channelID, TCP_RX_BYTES[channelID]);
+                logdebug("%d;%s\n", channelID, TCP_RX_BUFFER[channelID]);
 
                 Serial.print("+CIPRECVLEN:");
                 Serial.print(channelID);
@@ -297,13 +297,13 @@ void process_tcp_server()
 
     if (!client)
     {
-        LogTrace("TcpServer has client but unable to get the available client.");
+        logdebug("TcpServer has client but unable to get the available client.\n");
         return;
     }
 
     if (!client.connected())
     {
-        LogTrace("Client is not connected.");
+        logdebug("Client is not connected.\n");
         return;
     }
 
@@ -311,7 +311,7 @@ void process_tcp_server()
 
     if (channelID < 0)
     {
-        LogErr("Failed to register the client. Stopping.");
+        logerror("Failed to register the client. Stopping.\n");
         client.stop();
     }
 }
@@ -328,11 +328,11 @@ char get_connections_status(char *value)
     {
         if (!tcpClients[i])
         {
-            LogTrace("TcpClient[%d] is null", i);
+            logdebug("TcpClient[%d] is null.\n", i);
             continue;
         }
 
-        LogTrace("TcpClient[%d] is %d", i, tcpClients[i]);
+        logdebug("TcpClient[%d] is %d.\n", i, tcpClients[i]);
 
         Serial.print("+CIPSTATE:");
         Serial.print(i);
@@ -363,23 +363,23 @@ char send_data(char *value)
 
     if (len > sizeof(TCP_TX_BUFFER))
     {
-        LogErr("Length of the data to send (%d) is greater than the buffer size (%d).", len, TCP_TX_BUFFER);
+        logerror("Length of the data to send (%d) is greater than the buffer size (%d).\n", len, TCP_TX_BUFFER);
         return AT_ERROR;
     }
 
     if (chan >= tcpClients.size())
     {
-        LogWarn("Specified chan %d is not present (%d chanels currently connected).", chan, tcpClients.size());
+        logwarning("Specified chan %d is not present (%d chanels currently connected).\n", chan, tcpClients.size());
         return AT_ERROR;
     }
 
-    LogTrace("Preparing to send %lu bytes to channel %d", len, chan);
+    logdebug("Preparing to send %lu bytes to channel %d.\n", len, chan);
 
     WiFiClient client = tcpClients[chan];
 
     if (!client.connected())
     {
-        LogErr("Client is not connected.");
+        logerror("Client is not connected.\n");
         return AT_ERROR;
     }
 
@@ -401,13 +401,13 @@ char send_data(char *value)
         TCP_TX_BUFFER[read++] = byte;
     }
 
-    LogTrace("Sending %lu bytes to channel %d\n%s", len, chan, TCP_TX_BUFFER);
+    logdebug("Sending %lu bytes to channel %d\n%s\n", len, chan, TCP_TX_BUFFER);
 
     unsigned long sent = client.write(TCP_TX_BUFFER, len);
 
     if (sent != len)
     {
-        LogErr("Failed to send %lu bytes to channel %d", len, chan);
+        logdebug("Failed to send %lu bytes to channel %d\n", len, chan);
         stop_at_processing = false;
 
         return AT_ERROR;

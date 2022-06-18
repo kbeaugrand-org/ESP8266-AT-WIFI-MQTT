@@ -19,12 +19,12 @@ void setup()
 
   Serial.println();
 
-  LogInfo("ESP8266 AT - WIFI / TCP/IP / MQTT");
-  LogInfo("This firmware is licensed under the MIT license");
-  LogInfo(" - (see https://github.com/kbeaugrand/ESP8266-AT-WIFI-MQTT for more info)");
-  LogInfo("Type AT+CMD? for command list");
+  loginfo("ESP8266 AT - WIFI / TCP/IP / MQTT\n");
+  loginfo("This firmware is licensed under the MIT license\n");
+  loginfo(" - (see https://github.com/kbeaugrand/ESP8266-AT-WIFI-MQTT for more info)\n");
+  loginfo("Type AT+CMD? for command list\n");
 
-  LogInfo("AT Command Processor ready");
+  loginfo("AT Command Processor ready\n");
 }
 
 void loop()

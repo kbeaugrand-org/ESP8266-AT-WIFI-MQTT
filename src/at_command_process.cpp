@@ -32,7 +32,7 @@ void process_at_commands()
       // Input is too long
       if (readString.length() > AT_MAX_TEMP_STRING)
       {
-        LogErr("Input is too long");
+        logerror("Input is too long\n");
         Serial.println();
         Serial.println(AT_ERROR_STRING);
         readString = "";

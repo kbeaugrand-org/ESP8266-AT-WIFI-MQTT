@@ -1,6 +1,5 @@
 #include "at_parser.h"
 #include <Arduino.h>
-#include "logging.h"
 
 AT_COMMAND at_registered_commands[AT_COMMANDS_NUM];
 
@@ -56,7 +55,6 @@ char at_execute_command(const char *command, unsigned char *value, unsigned char
                         return AT_ERROR;
                     }
 
-                    LogInfo("Set %s - %s", at_registered_commands[i].name, value);
                     result = at_registered_commands[i].setter(value);
                     break;
                 case AT_PARSER_STATE_READ:
@@ -65,7 +63,6 @@ char at_execute_command(const char *command, unsigned char *value, unsigned char
                         return AT_ERROR;
                     }
 
-                    LogInfo("Query %s", at_registered_commands[i].name);
                     result = at_registered_commands[i].getter(value);
                     break;
                 case AT_PARSER_STATE_TEST:
@@ -74,7 +71,6 @@ char at_execute_command(const char *command, unsigned char *value, unsigned char
                         return AT_ERROR;
                     }
 
-                    LogInfo("Test %s - %s", at_registered_commands[i].name, value);
                     result = at_registered_commands[i].test(value);
                     break;
                 case AT_PARSER_STATE_COMMAND:
@@ -83,7 +79,6 @@ char at_execute_command(const char *command, unsigned char *value, unsigned char
                         return AT_ERROR;
                     }
 
-                    LogInfo("Execute %s", at_registered_commands[i].name);
                     result = at_registered_commands[i].execute(value);
                     break;            
                 default:
