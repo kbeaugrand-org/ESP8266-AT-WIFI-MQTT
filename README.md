@@ -124,7 +124,7 @@ AT+CMD?
 **Response:**
 
 ```txt
-+CMD:<index>,<AT command name>,<support test command>,<support query command>,<support set command>,<support execute command>
++CMD=<index>,<AT command name>,<support test command>,<support query command>,<support set command>,<support execute command>
 
 OK
 ```
@@ -263,7 +263,7 @@ OK
 Query the AP to which the Station is already connected.
 
 ```txt
-AT+CWRECONNCFG:<reconncfg>
+AT+CWRECONNCFG=<reconncfg>
 ```
 
 **Response:**
